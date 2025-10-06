@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progetto 100 Soci - Premium</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#FFA000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="NPL Dashboard">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #FFD700 0%, #FFA000 100%); min-height: 100vh; padding: 20px; }
+        .login-container { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .login-box { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 400px; width: 100%; }
+        .login-box h1 { color: #FFA000; margin-bottom: 30px; text-align: center; }
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; margin-bottom: 8px; color: #333; font-weight: 500; }
+        .input-group input { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; }
+        .input-group input:focus { outline: none; border-color: #FFA000; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        .btn-login { width: 100%; padding: 14px; background: linear-gradient(135deg, #FFD700 0%, #FFA000 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .dashboard { display: none; max-width: 1600px; margin: 0 auto; }
+        .dashboard.active { display: block; }
+        .container { background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #FFD700 0%, #FFA000 100%); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .header h1 { font-size: 1.8em; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .header-right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        @media (max-width: 768px) {
+            .header { padding: 15px; }
+            .header h1 { font-size: 1.3em; width: 100%; margin-bottom: 10px; }
+            .header-right { width: 100%; justify-content: space-between; }
+            .user-badge { font-size: 12px; padding: 6px 12px; }
+            .btn { padding: 8px 12px; font-size: 12px; }
+        }
+        .user-badge { background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; font-weight: 600; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-logout { background: #f44336; color: white; }
+        .btn-upload { background: #4CAF50; color: white; }
+        .btn-danger { background: #f44336; color: white; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .admin-panel { padding: 25px; background: #f8f9fa; border-bottom: 3px solid #FFA000; }
+        .admin-panel h2 { color: #FFA000; margin-bottom: 15px; }
+        .upload-area { border: 3px dashed #FFA000; border-radius: 15px; padding: 40px; text-align: center; cursor: pointer; background: white; transition: all 0.3s; }
+        .upload-area:hover { background: #f5f5ff; transform: translateY(-2px); }
+        #fileInput { display: none; }
+        .stats { display: flex; justify-content: space-around; padding: 25px; background: linear-gradient(135deg, #FFD700 0%, #FFA000 100%); color: white; flex-wrap: wrap; gap: 20px; }
+        .stat-item { text-align: center; flex: 1; min-width: 150px; }
+        .stat-number { font-size: 36px; font-weight: 700; margin-bottom: 5px; }
+        .stat-label { font-size: 14px; opacity: 0.9; }
+        .filters-section { padding: 25px; background: #f8f9fa; border-bottom: 3px solid #FFA000; }
+        .filters-section h3 { color: #FFA000; margin-bottom: 20px; }
+        .filters-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .filter-item { display: flex; flex-direction: column; }
+        .filter-item label { font-weight: 600; margin-bottom: 8px; color: #333; }
+        .filter-item select, .filter-item input { padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; }
+        .filter-item select:focus, .filter-item input:focus { outline: none; border-color: #FFA000; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        .filter-buttons { display: flex; gap: 10px; }
+        .table-container { padding: 25px; }
+        .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        @media (max-width: 768px) {
+            .table-container { padding: 15px; }
+            .table-wrapper { 
+                overflow-x: auto; 
+                border: 1px solid #ddd; 
+                border-radius: 8px;
+                box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+            }
+            table { min-width: 800px; }
+            .table-search { width: 100%; max-width: 300px; }
+        }
+        .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .table-search { padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 8px; width: 300px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        thead { background: #f5f5f5; }
+        th { padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #FFA000; }
+        td { padding: 10px 12px; border-bottom: 1px solid #e0e0e0; }
+        tbody tr:hover { background: #f9f9f9; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; padding: 20px; overflow-y: auto; }
+        .modal.active { display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 15px; max-width: 900px; width: 100%; max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e0e0e0; }
+        .btn-close { background: #f44336; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+        .detail-item { padding: 12px; background: #f9f9f9; border-radius: 8px; }
+        .detail-item label { display: block; font-size: 11px; color: #666; margin-bottom: 5px; text-transform: uppercase; font-weight: 600; }
+        .detail-item .value { font-size: 14px; color: #333; font-weight: 500; }
+        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center; }
+        .loading-overlay.active { display: flex; }
+        .loading-content { background: white; padding: 40px; border-radius: 15px; text-align: center; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #FFA000; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .alert { padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: 500; }
+        .alert-success { background: #d4edda; color: #155724; }
+        .alert-error { background: #f8d7da; color: #721c24; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content"><div class="spinner"></div><p id="loadingText">Caricamento...</p></div>
+    </div>
+
+    <div id="loginScreen" class="login-container">
+        <div class="login-box">
+            <h1>Progetto 100 Soci</h1><p style="text-align:center;color:#FFA000;font-size:12px;font-weight:600;margin-top:10px;">ACCESSO RISERVATO</p>
+            <div id="loginAlert"></div>
+            <div class="input-group"><label>Username</label><input type="text" id="username" placeholder="socio"></div>
+            <div class="input-group"><label>Password</label><input type="password" id="password" placeholder="premium100"></div>
+            <button class="btn-login" onclick="login()">Accedi</button>
+        </div>
+    </div>
+
+    <div id="dashboard" class="dashboard">
+        <div class="container">
+            <div class="header">
+                <h1>Progetto 100 Soci</h1>
+                <div class="header-right">
+                    <span class="user-badge" id="userBadge"></span>
+                    <button class="btn btn-danger hidden" id="deleteBtn" onclick="resetDatabase()">Svuota Dati</button>
+                    <button class="btn btn-upload hidden" id="uploadBtn" onclick="showUploadPanel()">Carica Excel</button>
+                    <button class="btn btn-logout" onclick="logout()">Esci</button>
+                </div>
+            </div>
+
+            <div id="adminPanel" class="admin-panel hidden">
+                <h2>Pannello Admin</h2>
+                <div id="uploadAlert"></div>
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <div style="font-size: 48px; margin-bottom: 10px;">📊</div>
+                    <h3>Carica file Excel</h3>
+                    <p>Formati supportati: .xlsx, .xls</p>
+                </div>
+                <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFileUpload(event)">
+            </div>
+
+            <div class="stats">
+                <div class="stat-item"><div class="stat-number" id="statTotal">0</div><div class="stat-label">Immobili Totali</div></div>
+                <div class="stat-item"><div class="stat-number" id="statAste">0</div><div class="stat-label">Aste</div></div>
+                <div class="stat-item"><div class="stat-number" id="statNpl">0</div><div class="stat-label">NPL</div></div>
+                <div class="stat-item"><div class="stat-number" id="statValutazione">€0</div><div class="stat-label">Valutazione Totale</div></div>
+            </div>
+
+            <div class="filters-section">
+                <h3>Filtri di Ricerca</h3>
+                <div class="filters-grid">
+                    <div class="filter-item"><label>Tipo</label><select id="filterTipo"><option value="">Tutti</option><option value="asta">Aste</option><option value="npl">NPL</option></select></div>
+                    <div class="filter-item"><label>Regione</label><select id="filterRegione" onchange="updateCittaFilter()"><option value="">Tutte le regioni</option></select></div>
+                    <div class="filter-item"><label>Città</label><select id="filterCitta"><option value="">Tutte le città</option></select></div>
+                    <div class="filter-item"><label>Ricerca libera</label><input type="text" id="filterSearch" placeholder="Cerca..."></div>
+                </div>
+                <div class="filter-buttons">
+                    <button class="btn btn-upload" onclick="applyFilters()">Applica Filtri</button>
+                    <button class="btn btn-danger" onclick="clearFilters()">Azzera Filtri</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <div class="table-header">
+                    <h2>Elenco Dati (<span id="recordCount">0</span>)</h2>
+                    <input type="text" id="tableSearch" class="table-search" placeholder="Cerca..." onkeyup="searchTable()">
+                </div>
+                <div class="table-wrapper">
+                    <table id="dataTable">
+                        <thead id="tableHead"><tr><th>Nessun dato</th></tr></thead>
+                        <tbody id="tableBody"><tr><td style="text-align: center; padding: 40px;">Carica un file Excel</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h2>Dettaglio Record</h2><button class="btn-close" onclick="closeModal()">Chiudi</button></div>
+            <div id="detailContent" class="detail-grid"></div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        const firebaseConfig = {apiKey:"AIzaSyCrdoY0gxuzPdSp955NhnQBRkjRIUpdPKI",authDomain:"app-npl-italia.firebaseapp.com",databaseURL:"https://app-npl-italia-default-rtdb.europe-west1.firebasedatabase.app",projectId:"app-npl-italia",storageBucket:"app-npl-italia.firebasestorage.app",messagingSenderId:"299298163787",appId:"1:299298163787:web:4d08b7dd3273aa4dc011ce"};
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let allData = [];
+        let currentUser = null;
+        const users = {'socio': {password: 'premium100', role: 'Socio Premium', level: 3},'viewer': {password: 'view2025', role: 'Viewer', level: 2}};
+
+        function showLoading(text = 'Caricamento...') {document.getElementById('loadingText').textContent = text;document.getElementById('loadingOverlay').classList.add('active');}
+        function hideLoading() {document.getElementById('loadingOverlay').classList.remove('active');}
+        function showAlert(id, message, type = 'info') {const el = document.getElementById(id);el.innerHTML = `<div class="alert alert-${type}">${message}</div>`;setTimeout(() => el.innerHTML = '', 5000);}
+
+        function login() {
+            const username = document.getElementById('username').value.toLowerCase().trim();
+            const password = document.getElementById('password').value;
+            if (users[username] && users[username].password === password) {
+                currentUser = {username,role: users[username].role,level: users[username].level};
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('dashboard').classList.add('active');
+                document.getElementById('userBadge').textContent = `${currentUser.role}: ${username}`;
+                if (currentUser.level === 3) {
+                    document.getElementById('uploadBtn').classList.remove('hidden');
+                    document.getElementById('deleteBtn').classList.remove('hidden');
+                }
+                loadData();
+            } else {
+                showAlert('loginAlert', 'Credenziali errate', 'error');
+            }
+        }
+
+        function logout() {
+            currentUser = null;allData = [];
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('dashboard').classList.remove('active');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        async function loadData() {
+            showLoading('Caricamento dati...');
+            try {
+                const snapshot = await db.ref('data').once('value');
+                const data = snapshot.val();
+                if (data) {
+                    allData = Array.isArray(data) ? data : Object.values(data);
+                    allData = allData.map(item => {
+                        const tipoCol = Object.keys(item).find(k => /^tipo$/i.test(k));
+                        if (tipoCol && item[tipoCol]) {
+                            item.tipo = String(item[tipoCol]).toLowerCase().includes('asta') ? 'asta' : 'npl';
+                        } else {
+                            const destCol = Object.keys(item).find(k => /destinazione.*uso/i.test(k));
+                            item.tipo = (destCol && String(item[destCol]).toLowerCase().includes('asta')) ? 'asta' : 'npl';
+                        }
+                        return item;
+                    });
+                    console.log('Dati caricati:', allData.length);
+                    populateFilters();
+                    renderAll();
+                }
+            } catch (error) {
+                console.error('Errore:', error);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function populateFilters() {
+            if (!allData || allData.length === 0) return;
+            
+            // FIX CRITICO: Cerca colonna Regione in modo flessibile
+            const regioni = new Set();
+            allData.forEach(item => {
+                const regioneKey = Object.keys(item).find(k => /regione/i.test(k));
+                if (regioneKey && item[regioneKey]) {
+                    const reg = String(item[regioneKey]).trim();
+                    if (reg && reg !== '-' && reg.toLowerCase() !== 'nan') {
+                        regioni.add(reg);
+                    }
+                }
+            });
+            
+            const regioniArr = [...regioni].sort();
+            console.log('Regioni trovate:', regioniArr);
+            
+            const select = document.getElementById('filterRegione');
+            select.innerHTML = '<option value="">Tutte le regioni</option>' +
+                regioniArr.map(r => `<option value="${r}">${r}</option>`).join('');
+            
+            updateCittaFilter();
+        }
+        
+        function updateCittaFilter() {
+            if (!allData || allData.length === 0) return;
+            const regioneSelezionata = document.getElementById('filterRegione').value;
+            const citta = new Set();
+            
+            allData.forEach(d => {
+                const regioneKey = Object.keys(d).find(k => /regione/i.test(k));
+                if (regioneSelezionata && regioneKey && d[regioneKey] !== regioneSelezionata) return;
+                
+                const comuneKey = Object.keys(d).find(k => /comune/i.test(k));
+                if (comuneKey && d[comuneKey]) {
+                    const com = String(d[comuneKey]).split('\n')[0].trim();
+                    if (com && com !== '-' && com.toLowerCase() !== 'nan') citta.add(com);
+                }
+            });
+            
+            const cittaArr = [...citta].sort();
+            const select = document.getElementById('filterCitta');
+            select.innerHTML = '<option value="">Tutte le città</option>' +
+                cittaArr.map(c => `<option value="${c}">${c}</option>`).join('');
+        }
+
+        function applyFilters() {renderAll();}
+        function clearFilters() {
+            document.getElementById('filterTipo').value = '';
+            document.getElementById('filterRegione').value = '';
+            document.getElementById('filterCitta').value = '';
+            document.getElementById('filterSearch').value = '';
+            renderAll();
+        }
+
+        function getFilteredData() {
+            let filtered = [...allData];
+            const tipo = document.getElementById('filterTipo').value;
+            if (tipo) filtered = filtered.filter(d => d.tipo === tipo);
+            
+            const regione = document.getElementById('filterRegione').value;
+            if (regione) {
+                filtered = filtered.filter(d => {
+                    const regioneKey = Object.keys(d).find(k => /regione/i.test(k));
+                    return regioneKey && String(d[regioneKey]).trim() === regione;
+                });
+            }
+            
+            const citta = document.getElementById('filterCitta').value;
+            if (citta) {
+                filtered = filtered.filter(d => {
+                    const comuneKey = Object.keys(d).find(k => /comune/i.test(k));
+                    return comuneKey && String(d[comuneKey]).split('\n')[0].trim() === citta;
+                });
+            }
+            
+            const search = document.getElementById('filterSearch').value.toLowerCase();
+            if (search) filtered = filtered.filter(d => Object.values(d).some(v => String(v).toLowerCase().includes(search)));
+            
+            return filtered;
+        }
+
+        function renderAll() {
+            const filtered = getFilteredData();
+            updateStats();
+            renderTable(filtered);
+        }
+
+        function updateStats() {
+            const asteCount = allData.filter(d => d.tipo === 'asta').length;
+            const nplCount = allData.filter(d => d.tipo === 'npl').length;
+            document.getElementById('statTotal').textContent = allData.length;
+            document.getElementById('statAste').textContent = asteCount;
+            document.getElementById('statNpl').textContent = nplCount;
+        }
+
+        function renderTable(data) {
+            const thead = document.getElementById('tableHead');
+            const tbody = document.getElementById('tableBody');
+            if (data.length === 0) {
+                thead.innerHTML = '<tr><th>Nessun dato</th></tr>';
+                tbody.innerHTML = '<tr><td style="text-align:center; padding:40px;">Nessun risultato</td></tr>';
+                document.getElementById('recordCount').textContent = '0';
+                return;
+            }
+            
+            // ORDINAMENTO DECRESCENTE per Data Asta
+            const dataCol = Object.keys(data[0]).find(k => /data.*asta/i.test(k));
+            if (dataCol) {
+                data = [...data].sort((a, b) => {
+                    const dateA = parseItalianDate(a[dataCol]);
+                    const dateB = parseItalianDate(b[dataCol]);
+                    return dateB - dateA;
+                });
+            }
+            
+            window.currentTableData = data;
+            const sampleRecord = data[0];
+            
+            // Colonne da mostrare
+            const colsToShow = ['Tipo', 'Data Asta', 'Project ID', 'Titolo', 'Prezzo base d\'asta', 'Situazione debitoria', 'Indirizzo', 'Comune', 'Provincia', 'Regione'];
+            const cols = Object.keys(sampleRecord).filter(k => colsToShow.some(c => c.toLowerCase() === k.toLowerCase()));
+            
+            thead.innerHTML = '<tr>' + cols.map(c => `<th>${c}</th>`).join('') + '<th>Contatti</th><th>Dettagli</th></tr>';
+            
+            tbody.innerHTML = data.map((item, idx) => {
+                const icona = item.tipo === 'asta' ? '🔨' : '📋';
+                const row = cols.map(col => {
+                    let val = item[col] || '-';
+                    if (col.toLowerCase().includes('tipo')) {
+                        return `<td><span style="background:${item.tipo === 'asta' ? '#FF9800' : '#2196F3'};color:white;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:bold;">${icona} ${val.toUpperCase()}</span></td>`;
+                    }
+                    return `<td>${val}</td>`;
+                }).join('');
+                
+                // FIX: Mostra link SOLO per ASTE, telefono SOLO per NPL
+                let contatti = '-';
+                if (item.tipo === 'asta') {
+                    const linkCol = Object.keys(item).find(k => /clicca|pre.*asta/i.test(k));
+                    if (linkCol && item[linkCol]) {
+                        contatti = `<a href="${item[linkCol]}" target="_blank" style="display:inline-block;background:#FF9800;color:white;padding:6px 12px;border-radius:4px;text-decoration:none;font-size:12px;font-weight:bold;">✉️ Pre-Asta</a>`;
+                    }
+                } else {
+                    const telCol = Object.keys(item).find(k => /telefon/i.test(k));
+                    if (telCol && item[telCol]) {
+                        contatti = `<a href="tel:${item[telCol]}" style="display:inline-block;background:#2196F3;color:white;padding:6px 12px;border-radius:4px;text-decoration:none;font-size:12px;font-weight:bold;">📞 Chiama</a>`;
+                    }
+                }
+                
+                return `<tr>${row}<td>${contatti}</td><td><button class="btn btn-upload" style="padding:6px 12px;font-size:12px;" onclick="showDetail(${idx})">Dettagli</button></td></tr>`;
+            }).join('');
+            
+            document.getElementById('recordCount').textContent = data.length;
+        }
+        
+        function parseItalianDate(dateStr) {
+            if (!dateStr) return new Date(0);
+            const parts = String(dateStr).split('/');
+            if (parts.length === 3) return new Date(parts[2], parts[1] - 1, parts[0]);
+            return new Date(0);
+        }
+
+        function searchTable() {
+            const term = document.getElementById('tableSearch').value.toLowerCase();
+            document.querySelectorAll('#tableBody tr').forEach(row => {
+                row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+            });
+        }
+
+        function showDetail(idx) {
+            const data = window.currentTableData || getFilteredData();
+            const item = data[idx];
+            if (!item) {alert('Errore');return;}
+            const content = document.getElementById('detailContent');
+            const fields = Object.keys(item).map(key => {
+                const value = item[key] || '-';
+                if (/telefon/i.test(key)) return `<div class="detail-item" style="background:#e3f2fd;border-left:4px solid #2196F3;"><label style="color:#1976D2;font-weight:bold;">${key}</label><div class="value"><a href="tel:${value}" style="color:#1976D2;text-decoration:none;">${value}</a></div></div>`;
+                if (/clicca|pre.*asta/i.test(key)) return `<div class="detail-item" style="background:#fff3e0;border-left:4px solid #FF9800;"><label style="color:#F57C00;font-weight:bold;">${key}</label><div class="value"><a href="${value}" target="_blank" style="display:inline-block;background:#FF9800;color:white;padding:10px 20px;border-radius:5px;text-decoration:none;font-weight:bold;">Contattaci</a></div></div>`;
+                return `<div class="detail-item"><label>${key}</label><div class="value">${value}</div></div>`;
+            }).join('');
+            content.innerHTML = fields;
+            document.getElementById('detailModal').classList.add('active');
+        }
+
+        function closeModal() {document.getElementById('detailModal').classList.remove('active');}
+        function showUploadPanel() {document.getElementById('adminPanel').classList.toggle('hidden');}
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            showLoading('Lettura Excel...');
+            try {
+                const data = await readExcel(file);
+                if (data && data.length > 0) {
+                    showLoading('Salvataggio...');
+                    await saveToFirebase(data);
+                    showAlert('uploadAlert', `Caricati ${data.length} record`, 'success');
+                }
+            } catch (error) {
+                showAlert('uploadAlert', 'Errore: ' + error.message, 'error');
+            } finally {
+                hideLoading();
+                event.target.value = '';
+            }
+        }
+
+        function readExcel(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, {type: 'array'});
+                        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(sheet, {defval: null});
+                        const cleaned = jsonData.map(row => {
+                            const newRow = {};
+                            for (let key in row) newRow[String(key).replace(/[.#$\/\[\]]/g, '_')] = row[key];
+                            const tipoCol = Object.keys(newRow).find(k => /^tipo$/i.test(k));
+                            newRow.tipo = (tipoCol && String(newRow[tipoCol]).toLowerCase().includes('asta')) ? 'asta' : 'npl';
+                            return newRow;
+                        });
+                        resolve(cleaned);
+                    } catch (err) {reject(new Error('File non valido'));}
+                };
+                reader.onerror = () => reject(new Error('Errore lettura'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        async function saveToFirebase(newData) {
+            const snapshot = await db.ref('data').once('value');
+            const existing = snapshot.val();
+            let allRecords = existing ? Object.values(existing) : [];
+            allRecords = [...allRecords, ...newData];
+            await db.ref('data').remove();
+            const CHUNK_SIZE = 500;
+            for (let i = 0; i < allRecords.length; i += CHUNK_SIZE) {
+                const chunk = allRecords.slice(i, i + CHUNK_SIZE);
+                const updates = {};
+                chunk.forEach((item, idx) => {updates[i + idx] = item;});
+                await db.ref('data').update(updates);
+            }
+            allData = allRecords;
+            populateFilters();
+            renderAll();
+        }
+
+        async function resetDatabase() {
+            if (currentUser.level !== 3 || !confirm('Cancellare TUTTI i dati?')) return;
+            showLoading('Cancellazione...');
+            await db.ref('data').remove();
+            allData = [];
+            renderAll();
+            showAlert('uploadAlert', 'Database cancellato', 'success');
+            hideLoading();
+        }
+
+        document.getElementById('detailModal').addEventListener('click', function(e) {if (e.target === this) closeModal();});
+        document.getElementById('password').addEventListener('keypress', function(e) {if (e.key === 'Enter') login();});
+        document.getElementById('filterRegione').addEventListener('change', updateCittaFilter);
+
+        // PWA SERVICE WORKER REGISTRATION
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker registrato'))
+                    .catch(err => console.log('Service Worker errore:', err));
+            });
+        }
+
+        // PWA INSTALL PROMPT
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Mostra pulsante install (opzionale)
+            const installBtn = document.createElement('button');
+            installBtn.textContent = '📱 Installa App';
+            installBtn.className = 'btn btn-upload';
+            installBtn.style.position = 'fixed';
+            installBtn.style.bottom = '20px';
+            installBtn.style.right = '20px';
+            installBtn.style.zIndex = '9999';
+            installBtn.onclick = async () => {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') installBtn.remove();
+                deferredPrompt = null;
+            };
+            document.body.appendChild(installBtn);
+        });
+    </script>
+</body>
+</html>
