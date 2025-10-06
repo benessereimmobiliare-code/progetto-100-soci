@@ -230,6 +230,12 @@
                 if (data) {
                     allData = Array.isArray(data) ? data : Object.values(data);
                     allData = allData.map(item => {
+                        // Ignora righe vuote
+                        const projectIdCol = Object.keys(item).find(k => /project.*id/i.test(k));
+                        if (!projectIdCol || !item[projectIdCol] || item[projectIdCol] === '-') {
+                            return null; // Marca per rimozione
+                        }
+                        
                         const tipoCol = Object.keys(item).find(k => /^tipo$/i.test(k));
                         if (tipoCol && item[tipoCol]) {
                             item.tipo = String(item[tipoCol]).toLowerCase().includes('asta') ? 'asta' : 'npl';
@@ -238,7 +244,7 @@
                             item.tipo = (destCol && String(item[destCol]).toLowerCase().includes('asta')) ? 'asta' : 'npl';
                         }
                         return item;
-                    });
+                    }).filter(item => item !== null);
                     console.log('Dati caricati:', allData.length);
                     populateFilters();
                     renderAll();
